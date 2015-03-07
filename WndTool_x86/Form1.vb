@@ -4,6 +4,7 @@ Imports System.Diagnostics
 Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 Imports System.Text
+Imports System.Threading
 
 
 ' # Form Code
@@ -13,7 +14,7 @@ Public NotInheritable Class Form1
     Private Sub p_Me_Load( _
                     ByVal sender As Object, _
                     ByVal ea As EventArgs) Handles MyBase.Load
-        Me.Text = "WndTool_x86 Ver 1.22"
+        Me.Text = "WndTool_x86 Ver 1.23"
         Me.ClientSize = New Size(400, 400)
         Me.StartPosition = FormStartPosition.Manual
         Me.Location = New Point(100, 100)
@@ -26,6 +27,12 @@ Public NotInheritable Class Form1
         AddHandler Me.PictureBox1.MouseDown, AddressOf Me.p_PictureBox1_MouseDown
     End Sub
 
+    ' ::
+    Private Sub p_Me_Shown( _
+                    ByVal sender As Object, _
+                    ByVal ea As EventArgs) Handles MyBase.Shown
+        Me.TopMost = True
+    End Sub
 
     ' ::
     Private Sub p_Me_Deactivate( _
@@ -89,7 +96,7 @@ Public NotInheritable Class Form1
                 Catch ex As Exception
                 End Try
             End If
-            End If
+        End If
     End Sub
 
     ' ::
@@ -136,20 +143,25 @@ Public NotInheritable Class Form1
     Private Sub p_Button_Apply_Click( _
                     ByVal sender As Object, _
                     ByVal ea As EventArgs) Handles Button_Apply.Click
+        TaskGoing.Go(AddressOf Me.p_Apply_Go)
+    End Sub
+
+
+    Private Sub p_Apply_Go()
         If (Not Me._thd.Equals(IntPtr.Zero)) Then
             Try
                 Dim t_caption As String = Me.TextBox_Caption.Text
                 If (Not String.IsNullOrEmpty(t_caption)) Then
                     HB_Win32.SetWindowText(Me._thd, Me.TextBox_Caption.Text)
                 End If
-            Catch ex As Exception
+            Catch
             End Try
 
             Try
                 Dim t_opacity As Byte = _
                     Convert.ToByte(Me.TextBox_Opacity.Text)
                 HB_Win32.Set_WinOpacity(Me._thd, t_opacity)
-            Catch ex As Exception
+            Catch
             End Try
 
             Try
@@ -159,21 +171,18 @@ Public NotInheritable Class Form1
                     Convert.ToInt32(Me.TextBox_Bound_W.Text), _
                     Convert.ToInt32(Me.TextBox_Bound_H.Text), _
                     True)
-            Catch ex As Exception
-                'MessageBox.Show(ex.ToString())
+            Catch
             End Try
-
 
             Try
                 HB_Win32.Set_MaximizeBox(Me._thd, Me.CheckBox_MaxBox.Checked)
-            Catch ex As Exception
+            Catch
             End Try
 
             Try
                 HB_Win32.Set_ThickFrame(Me._thd, Me.CheckBox_Resize.Checked)
-            Catch ex As Exception
+            Catch
             End Try
-
 
             Try
                 HB_Win32.SetWindowPos(Me._thd, HB_Win32.HWND_BOTTOM, _
@@ -183,12 +192,12 @@ Public NotInheritable Class Form1
                     0, _
                     HB_Win32.SWP_NOMOVE Or HB_Win32.SWP_NOSIZE Or HB_Win32.SWP_NOZORDER Or _
                     HB_Win32.SWP_DRAWFRAME Or HB_Win32.SWP_NOACTIVATE)
-            Catch ex As Exception
+            Catch
             End Try
-
         End If
-    End Sub
 
+        TaskGoing.Kill()
+    End Sub
 
 
     Private _aboutBox As Dialog1 = New Dialog1()
@@ -201,3 +210,28 @@ Public NotInheritable Class Form1
     End Sub
 
 End Class
+
+
+
+Public Module TaskGoing
+    Private _th As Thread = Nothing
+
+    Public ReadOnly Property IsAlive As Boolean
+        Get
+            Return (_th IsNot Nothing)
+        End Get
+    End Property
+
+    Public Sub Kill()
+        _th = Nothing
+    End Sub
+
+    Public Sub Go(ByVal ths As ThreadStart)
+        If (_th Is Nothing) Then
+            _th = New Thread(ths)
+            _th.IsBackground = True
+            _th.Start()
+        Else
+        End If
+    End Sub
+End Module
